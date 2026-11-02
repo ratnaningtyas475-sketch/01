@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en" translate="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google" content="notranslate">
+    <title>Descriptive Text Interactive Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Mencegah text di-highlight/copy untuk menghindari penggunaan translate eksternal */
+        body {
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            background-color: #f0fdfa; /* Light teal background */
+        }
+        /* Mengizinkan input text untuk diketik */
+        input[type="text"] {
+            -webkit-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
+        }
+        .btn-option {
+            transition: all 0.2s ease;
+        }
+        .btn-option:disabled {
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 font-sans">
+
+    <!-- MAIN CONTAINER -->
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden relative">
+        
+        <!-- HEADER -->
+        <div class="bg-teal-600 text-white p-6 text-center">
+            <h1 class="text-3xl font-extrabold tracking-tight">Descriptive Text Challenge</h1>
+            <p class="text-sm mt-2 opacity-90 font-medium">English for Vocational High School (SMK) Grade XI - People & Places</p>
+        </div>
+
+        <!-- SCREEN 1: START/LOGIN -->
+        <div id="start-screen" class="p-8 md:p-12">
+            <h2 class="text-2xl font-bold mb-6 text-center text-teal-800">Enter Your Details to Start</h2>
+            <div class="space-y-5 max-w-md mx-auto bg-teal-50 p-6 rounded-xl border border-teal-100">
+                <div>
+                    <label class="block text-teal-900 text-sm font-bold mb-2" for="playerName">Full Name:</label>
+                    <input type="text" id="playerName" class="shadow-sm appearance-none border border-teal-300 rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="e.g. Siti Aminah" autocomplete="off">
+                </div>
+                <div>
+                    <label class="block text-teal-900 text-sm font-bold mb-2" for="playerClass">Class:</label>
+                    <input type="text" id="playerClass" class="shadow-sm appearance-none border border-teal-300 rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="e.g. XI AKL 2" autocomplete="off">
+                </div>
+                <div id="error-msg" class="text-red-500 text-sm hidden text-center font-semibold">Please fill in both your Name and Class.</div>
+                <button onclick="startGame()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 rounded-lg shadow-md focus:outline-none focus:ring-4 focus:ring-teal-300 transition duration-300 mt-6">
+                    Start Challenge (70 Questions)
+                </button>
+            </div>
+        </div>
+
+        <!-- SCREEN 2: QUIZ -->
+        <div id="quiz-screen" class="p-6 md:p-10 hidden">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6 border-b pb-4 gap-4">
+                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-2 md:mb-0 md:w-1/2">
+                  <div class="bg-teal-600 h-2.5 rounded-full transition-all duration-300" id="progress-bar" style="width: 0%"></div>
+                </div>
+                <div class="flex justify-between w-full md:w-auto gap-6">
+                    <span class="text-gray-500 font-semibold" id="question-tracker">Q 1 / 70</span>
+                    <span class="text-teal-700 font-bold bg-teal-100 px-3 py-1 rounded-full" id="score-tracker">Score: 0%</span>
+                </div>
+            </div>
+            
+            <!-- Optional Image -->
+            <div id="image-container" class="mb-6 hidden flex justify-center">
+                <img id="question-image" src="" alt="Question Image" class="max-h-64 rounded-lg shadow-md border border-gray-200">
+            </div>
+
+            <!-- Optional Context/Reading Passage -->
+            <div id="context-container" class="mb-6 text-gray-800 hidden bg-blue-50 p-5 rounded-lg border-l-4 border-blue-500 text-sm leading-relaxed shadow-sm">
+                <!-- Text context for questions will appear here -->
+            </div>
+
+            <h3 class="text-xl md:text-2xl font-semibold text-gray-800 mb-6" id="question-text">Loading question...</h3>
+            
+            <div class="grid grid-cols-1 gap-3" id="options-container">
+                <!-- Options will be generated here -->
+            </div>
+
+            <div class="mt-8 flex justify-end">
+                <button id="next-btn" onclick="nextQuestion()" class="hidden bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-8 rounded-lg shadow-md focus:outline-none transition duration-200 flex items-center">
+                    Next Question <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- SCREEN 3: RESULT -->
+        <div id="result-screen" class="p-8 md:p-12 hidden text-center">
+            <div class="mb-6">
+                <svg class="w-24 h-24 text-emerald-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg>
+            </div>
+            <h2 class="text-4xl font-extrabold text-gray-800 mb-2">Quiz Completed!</h2>
+            <p class="text-xl text-gray-600 mb-8">Excellent effort, <span id="display-name" class="font-bold text-teal-700"></span> from <span id="display-class" class="font-bold text-teal-700"></span>!</p>
+            
+            <div class="bg-teal-50 rounded-2xl p-8 mb-8 max-w-md mx-auto border-2 border-teal-100 shadow-inner">
+                <p class="text-sm text-teal-600 uppercase tracking-widest font-bold mb-2">Final Score</p>
+                <div class="flex items-end justify-center">
+                    <p class="text-7xl font-black text-teal-800" id="final-score">0</p>
+                    <p class="text-2xl text-teal-600 font-bold mb-2 ml-1">/100</p>
+                </div>
+                <p class="text-sm text-gray-500 mt-4" id="correct-count">Correct: 0 out of 70</p>
+            </div>
+
+            <button onclick="downloadCertificate()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 px-8 rounded-xl shadow-lg focus:outline-none transition duration-300 inline-flex items-center transform hover:scale-105">
+                <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Download Official Certificate
+            </button>
+        </div>
+
+    </div>
+
+    <!-- Hidden canvas for certificate generation -->
+    <canvas id="certCanvas" width="900" height="650" class="hidden"></canvas>
+
+    <script>
+        // --- 70 QUESTIONS DATABASE ---
+        const questions = [
+            // Section 1: Meaning / Purpose (1-15)
+            { q: "What is the main social function of a descriptive text?", options: ["To retell past events.", "To describe a particular person, place, or thing.", "To explain how to make something.", "To persuade the reader."], answer: 1 },
+            { q: "Which of the following is NOT an example of a descriptive text?", options: ["A text describing My Best Friend.", "A text about the beauty of Bali.", "A text explaining how to cook fried rice.", "A text detailing the physical appearance of Cristiano Ronaldo."], answer: 2 },
+            { q: "When describing a place, the writer usually focuses on...", options: ["The steps to build the place.", "The physical appearance, location, and atmosphere.", "The historical arguments about the place.", "The characters living in a fantasy world."], answer: 1 },
+            { q: "If you want to introduce your new classmate to your parents, what kind of text would you mentally use?", options: ["Narrative", "Recount", "Descriptive", "Procedure"], answer: 2 },
+            { q: "What does 'describe' mean in the context of descriptive text?", options: ["To tell a story in chronological order.", "To give a detailed account of characteristics and qualities.", "To debate an issue.", "To give commands."], answer: 1 },
+            { q: "A descriptive text about a person usually includes...", options: ["Ingredients and steps.", "Physical appearance, personality, and habits.", "Complication and resolution.", "Arguments and recommendation."], answer: 1 },
+            { q: "Why do writers write descriptive texts about historical places?", options: ["To give step-by-step instructions to tourists.", "To tell a funny story about the place.", "To provide a vivid image and detailed information about the place to readers.", "To argue that the place should be destroyed."], answer: 2 },
+            { q: "Which statement is true about Descriptive Text?", options: ["It uses Simple Past Tense.", "It focuses on a specific participant (e.g., 'My cat', not 'Cats in general').", "It always ends with a moral value.", "It requires temporal conjunctions like first, then, next."], answer: 1 },
+            { q: "The communicative purpose of describing 'B.J. Habibie' in a text is...", options: ["To entertain the reader.", "To describe B.J. Habibie specifically.", "To persuade people to be like him.", "To explain how to build airplanes."], answer: 1 },
+            { q: "In a text describing 'Eiffel Tower', the writer aims to...", options: ["Criticize the French government.", "Make the readers imagine the tower's structure and beauty.", "Tell the history of France in the past.", "Teach readers how to weld iron."], answer: 1 },
+            { q: "Descriptive text uses sensory details. What does 'sensory details' mean?", options: ["Details that appeal to our senses (sight, sound, smell, touch, taste).", "Details that are mathematically correct.", "Details about feelings of sadness.", "Details that only experts can understand."], answer: 0 },
+            { q: "Which question is most likely answered by a descriptive text about a person?", options: ["How did he die?", "What does he look like and what is he like?", "When was the city built?", "Why did the war happen?"], answer: 1 },
+            { q: "Which question is answered by a descriptive text about a place?", options: ["What is the atmosphere of the place like?", "Who discovered the place?", "How do you cook traditional food there?", "What happened there 100 years ago?"], answer: 0 },
+            { q: "If a text tells about 'Dogs' in general (their anatomy, species, habitat), is it a Descriptive text?", options: ["Yes, it describes dogs.", "No, it is a Report text because it is general.", "Yes, because it uses simple present tense.", "No, it is a Narrative text."], answer: 1 },
+            { q: "Descriptive text differs from Report text mainly in its...", options: ["Use of verbs.", "Specificity of the subject (Specific vs. General).", "Length of paragraphs.", "Use of adjectives."], answer: 1 },
+
+            // Section 2: Generic Structure (16-30)
+            { q: "What are the two main parts of a descriptive text?", options: ["Orientation and Complication", "Goal and Steps", "Identification and Description", "Thesis and Arguments"], answer: 2 },
+            { q: "What is the function of the 'Identification' part?", options: ["To describe the details of the object.", "To introduce and identify the specific participant to be described.", "To summarize the text.", "To give a moral lesson."], answer: 1 },
+            { q: "Where is the 'Identification' usually located?", options: ["In the last paragraph.", "In the middle of the text.", "In the first paragraph.", "Nowhere, it is optional."], answer: 2 },
+            { q: "The 'Description' part contains...", options: ["The introduction of the subject.", "Detailed characteristics, qualities, parts, or properties of the subject.", "The writer's signature.", "A series of past events."], answer: 1 },
+            { context: "I have a new neighbor. His name is Mr. John. He is from England.", q: "The short text above belongs to which part of generic structure?", options: ["Description", "Identification", "Resolution", "Orientation"], answer: 1 },
+            { context: "Mr. John is very tall. He has curly blonde hair and blue eyes. He usually wears casual clothes.", q: "The short text above belongs to...", options: ["Identification", "Description", "Steps", "Re-orientation"], answer: 1 },
+            { q: "In describing a place, what is usually written in the Identification?", options: ["The history of the place.", "The name and location of the place.", "The ticket price.", "The list of food sold there."], answer: 1 },
+            { q: "Can a descriptive text have more than one paragraph of Description?", options: ["No, it must be only one paragraph.", "Yes, it can have multiple paragraphs describing different aspects (e.g., physical appearance, then personality).", "No, it is strictly forbidden.", "Yes, but only if it's about a place."], answer: 1 },
+            { q: "Which phrase is typically found in the Identification part?", options: ["He has a pointed nose.", "The building is made of marble.", "Let me introduce you to my favorite city, Paris.", "It tastes very sweet and spicy."], answer: 2 },
+            { q: "If paragraph 1 says 'Raja Ampat is a famous tourist destination in West Papua.', it is the...", options: ["Description", "Goal", "Identification", "Argument"], answer: 2 },
+            { q: "If paragraph 2 says 'The water is crystal clear and you can see colorful corals.', it is the...", options: ["Identification", "Re-orientation", "Description", "Thesis"], answer: 2 },
+            { q: "Does a descriptive text require a 'Conclusion' as part of its generic structure?", options: ["Yes, it is mandatory.", "No, it is not a mandatory part of the generic structure, though sometimes a closing comment is added.", "Yes, otherwise it's incomplete.", "No, it must end with 'The End'."], answer: 1 },
+            { q: "Which part describes the 'qualities and characteristics'?", options: ["Identification", "Description", "Orientation", "Steps"], answer: 1 },
+            { q: "Which is the correct order of the generic structure?", options: ["Description - Identification", "Identification - Description", "Orientation - Description", "Identification - Resolution"], answer: 1 },
+            { q: "What happens if a text only has 'Description' without 'Identification'?", options: ["It becomes a better text.", "The reader will be confused about who or what is being described.", "It changes into a narrative text.", "It is still a perfect descriptive text."], answer: 1 },
+
+            // Section 3: Language Features (31-50)
+            { q: "Which tense is predominantly used in a descriptive text?", options: ["Simple Past Tense", "Simple Present Tense", "Present Perfect Tense", "Past Continuous Tense"], answer: 1 },
+            { q: "Why does descriptive text use Simple Present Tense?", options: ["Because it tells a story.", "Because it describes facts and current states of the subject.", "Because it gives instructions.", "Because it talks about the future."], answer: 1 },
+            { q: "Which of the following sentences is in Simple Present Tense?", options: ["She went to the market yesterday.", "He is visiting Bali next week.", "Borobudur Temple is located in Magelang.", "They were playing football."], answer: 2 },
+            { q: "Descriptive texts often use Adjectives. Which word is an adjective?", options: ["Quickly", "Beautiful", "Run", "Happiness"], answer: 1 },
+            { q: "Look at the sentence: 'He has a sharp nose and thick eyebrows.' The adjectives are...", options: ["Has, and", "He, nose", "Sharp, thick", "Nose, eyebrows"], answer: 2 },
+            { q: "Descriptive texts use Noun Phrases. Which one is a noun phrase?", options: ["Run fast", "Very slowly", "A beautiful large garden", "Is cooking"], answer: 2 },
+            { q: "What is a 'Relating Verb' (Copula) often used in describing?", options: ["Jump, swim, run", "Is, am, are, has, have", "Quickly, slowly, nicely", "Because, although, but"], answer: 1 },
+            { q: "Identify the relating verb in this sentence: 'The museum is very large.'", options: ["Museum", "Very", "Large", "Is"], answer: 3 },
+            { q: "Which sentence describes physical appearance?", options: ["She likes to read books.", "He is very kind and helpful.", "She has curly black hair and dark skin.", "He always wakes up early."], answer: 2 },
+            { q: "Which sentence describes personality/character?", options: ["He is 170 cm tall.", "She is a generous and patient teacher.", "He wears glasses.", "The room is painted blue."], answer: 1 },
+            { q: "Action verbs are sometimes used to describe habits. Identify the action verb: 'He plays badminton every weekend.'", options: ["He", "Plays", "Badminton", "Weekend"], answer: 1 },
+            { q: "Which of the following is NOT a language feature of descriptive text?", options: ["Use of specific participant.", "Use of adjectives.", "Use of temporal conjunctions (First, Then, Finally).", "Use of simple present tense."], answer: 2 },
+            { q: "In the phrase 'a stunning white sandy beach', what is the head noun?", options: ["Stunning", "White", "Sandy", "Beach"], answer: 3 },
+            { q: "Choose the correct verb: 'My sister ___ very beautiful.'", options: ["Is", "Am", "Are", "Has"], answer: 0 },
+            { q: "Choose the correct verb: 'The cat ___ white fur and a long tail.'", options: ["Is", "Have", "Has", "Does"], answer: 2 },
+            { q: "What is a 'Specific Participant'?", options: ["A general group (e.g., Schools).", "A unique, particular object (e.g., SMK Negeri 1 Jakarta).", "A step in a procedure.", "An anonymous person."], answer: 1 },
+            { q: "Is 'People in the world' a specific participant?", options: ["Yes", "No", "Maybe", "Always"], answer: 1 },
+            { q: "Which sentence uses an adjective correctly?", options: ["The house is beautifully.", "He is a tall man.", "She sings good.", "The fastly car."], answer: 1 },
+            { q: "To describe a place's atmosphere, we might use adjectives like...", options: ["Square, round, oval.", "Tall, short, fat.", "Peaceful, bustling, noisy, calm.", "Blue, red, green."], answer: 2 },
+            { q: "The pronoun 'It' is often used in descriptive text to refer to...", options: ["A person (male).", "A person (female).", "A place or a thing.", "Many people."], answer: 2 },
+
+            // Section 4: Comprehension / TKA Style (51-70) - With some images and contexts
+            { context: "My uncle, Mr. Hasan, is a mechanic. He is 45 years old. He is quite tall and well-built. He has short black hair and a thick mustache. He is very friendly and always smiles at everyone. He works at a famous garage in the city center.", 
+              q: "What does the text mainly describe?", options: ["Mr. Hasan's garage", "Mr. Hasan's physical appearance and character", "How to be a mechanic", "Mr. Hasan's daily activities"], answer: 1 },
+            { context: "My uncle, Mr. Hasan, is a mechanic. He is 45 years old. He is quite tall and well-built. He has short black hair and a thick mustache. He is very friendly and always smiles at everyone. He works at a famous garage in the city center.", 
+              q: "From the text, we can infer that Mr. Hasan is...", options: ["A grumpy person", "A young boy", "An approachable and kind person", "A lazy worker"], answer: 2 },
+            { context: "My uncle, Mr. Hasan, is a mechanic. He is 45 years old. He is quite tall and well-built. He has short black hair and a thick mustache. He is very friendly and always smiles at everyone. He works at a famous garage in the city center.", 
+              q: "The word 'well-built' is closest in meaning to...", options: ["Skinny", "Muscular and strong", "Fat", "Short"], answer: 1 },
+            
+            { image: "https://placehold.co/600x400/1E3A8A/ffffff?text=Great+Wall+of+China",
+              context: "The Great Wall of China is one of the most remarkable historical structures in the world. It stretches over 21,000 kilometers across northern China. Built initially to protect the Chinese Empire from invasions, it is made of stone, brick, tamped earth, and wood. Today, it is a major tourist attraction.",
+              q: "What was the original purpose of the Great Wall?", options: ["To attract tourists.", "To protect the empire from invasions.", "To connect cities.", "To be a world wonder."], answer: 1 },
+            { context: "The Great Wall of China is one of the most remarkable historical structures in the world. It stretches over 21,000 kilometers across northern China. Built initially to protect the Chinese Empire from invasions, it is made of stone, brick, tamped earth, and wood. Today, it is a major tourist attraction.",
+              q: "The word 'It' in 'It stretches over...' refers to...", options: ["Northern China", "The Chinese Empire", "The Great Wall", "The invasion"], answer: 2 },
+            { context: "The Great Wall of China is one of the most remarkable historical structures in the world. It stretches over 21,000 kilometers across northern China. Built initially to protect the Chinese Empire from invasions, it is made of stone, brick, tamped earth, and wood. Today, it is a major tourist attraction.",
+              q: "Which of the following is NOT a material used to build the wall?", options: ["Stone", "Brick", "Plastic", "Wood"], answer: 2 },
+
+            { context: "Agnes Monica, now known as Agnez Mo, is a famous Indonesian singer and actress. She has an energetic personality and a powerful voice. Agnez is highly ambitious and always strives for international success. She often changes her hair color, but she always looks stunning.",
+              q: "What is Agnez Mo's profession?", options: ["A doctor", "A singer and actress", "A politician", "A teacher"], answer: 1 },
+            { context: "Agnes Monica, now known as Agnez Mo, is a famous Indonesian singer and actress. She has an energetic personality and a powerful voice. Agnez is highly ambitious and always strives for international success. She often changes her hair color, but she always looks stunning.",
+              q: "The phrase 'strives for' can be replaced by...", options: ["Avoids", "Makes efforts towards", "Ignores", "Hates"], answer: 1 },
+            
+            { image: "https://placehold.co/600x400/059669/ffffff?text=Komodo+National+Park",
+              context: "Komodo National Park is located in the center of the Indonesian archipelago. It consists of three major islands: Komodo, Rinca, and Padar. The park was established to conserve the unique Komodo dragon and its habitat. The landscape features dry savanna, rugged hills, and pristine beaches with turquoise waters.",
+              q: "Where is Komodo National Park located?", options: ["In northern China", "In the center of the Indonesian archipelago", "In Australia", "In western Europe"], answer: 1 },
+            { context: "Komodo National Park is located in the center of the Indonesian archipelago. It consists of three major islands: Komodo, Rinca, and Padar. The park was established to conserve the unique Komodo dragon and its habitat. The landscape features dry savanna, rugged hills, and pristine beaches with turquoise waters.",
+              q: "Based on the text, what is the main reason the park was established?", options: ["To build hotels.", "To conserve the Komodo dragon and its habitat.", "To create a water park.", "To mine for gold."], answer: 1 },
+            { context: "Komodo National Park is located in the center of the Indonesian archipelago. It consists of three major islands: Komodo, Rinca, and Padar. The park was established to conserve the unique Komodo dragon and its habitat. The landscape features dry savanna, rugged hills, and pristine beaches with turquoise waters.",
+              q: "Which word best describes the water at the beaches?", options: ["Muddy", "Polluted", "Turquoise", "Dark"], answer: 2 },
+
+            { context: "Mr. Budi is my math teacher. He is a strict person, but very fair. He always wears neat clothes and polished shoes. During lessons, he explains formulas clearly so everyone can understand. Even though he rarely smiles in class, we know he cares about our success.",
+              q: "Why do the students respect Mr. Budi despite him being strict?", options: ["Because he gives them money.", "Because he is fair and explains lessons clearly.", "Because he is always angry.", "Because he never teaches."], answer: 1 },
+            { context: "Mr. Budi is my math teacher. He is a strict person, but very fair. He always wears neat clothes and polished shoes. During lessons, he explains formulas clearly so everyone can understand. Even though he rarely smiles in class, we know he cares about our success.",
+              q: "The word 'strict' means...", options: ["Demanding that rules are obeyed", "Very funny", "Lazy and careless", "Always smiling"], answer: 0 },
+
+            { image: "https://placehold.co/600x400/9333EA/ffffff?text=Traditional+Market",
+              context: "Beringharjo Market is the oldest traditional market in Yogyakarta. It is a bustling place where you can find various goods, from fresh vegetables and traditional snacks to beautiful batik fabrics. The atmosphere is crowded, noisy, and full of life as sellers and buyers bargain for the best prices.",
+              q: "What makes Beringharjo Market noisy?", options: ["Animals sleeping.", "Sellers and buyers bargaining.", "Music concerts.", "Cars driving inside."], answer: 1 },
+            { context: "Beringharjo Market is the oldest traditional market in Yogyakarta. It is a bustling place where you can find various goods, from fresh vegetables and traditional snacks to beautiful batik fabrics. The atmosphere is crowded, noisy, and full of life as sellers and buyers bargain for the best prices.",
+              q: "The word 'bustling' in the text implies that the market is...", options: ["Empty and quiet", "Clean and modern", "Very busy and active", "Dark and scary"], answer: 2 },
+            
+            { q: "In an analytical/TKA context, identifying 'main idea' of a descriptive paragraph means...", options: ["Finding the chronological order.", "Identifying the central trait or object being described.", "Counting the adjectives.", "Finding the moral value."], answer: 1 },
+            { q: "If a text describes someone as 'pessimistic', it means the person...", options: ["Always expects the best to happen.", "Tends to see the worst aspect of things.", "Is very smart.", "Is highly energetic."], answer: 1 },
+            { q: "Which prefix changes the adjective 'patient' into its opposite meaning?", options: ["un-", "in-", "im-", "dis-"], answer: 2 }, // impatient
+            { q: "A descriptive text about a historical building often includes dimensions (e.g., 50 meters high). This falls under...", options: ["Subjective opinion", "Objective physical description", "Character trait", "Resolution"], answer: 1 },
+            { q: "The final question: Why is learning descriptive text important for SMK students?", options: ["To write fictional fairy tales.", "To be able to describe products, places, or professionals accurately in their future careers.", "To sing English songs.", "To memorize historical dates."], answer: 1 }
+        ];
+
+        // --- GAME VARIABLES ---
+        let currentQuestionIndex = 0;
+        let correctAnswersCount = 0;
+        let playerName = "";
+        let playerClass = "";
+        let hasAnsweredCurrent = false;
+
+        // --- DOM ELEMENTS ---
+        const startScreen = document.getElementById('start-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultScreen = document.getElementById('result-screen');
+        
+        const playerNameInput = document.getElementById('playerName');
+        const playerClassInput = document.getElementById('playerClass');
+        const errorMsg = document.getElementById('error-msg');
+        
+        const questionTracker = document.getElementById('question-tracker');
+        const scoreTracker = document.getElementById('score-tracker');
+        const progressBar = document.getElementById('progress-bar');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const nextBtn = document.getElementById('next-btn');
+        const contextContainer = document.getElementById('context-container');
+        
+        const imageContainer = document.getElementById('image-container');
+        const questionImage = document.getElementById('question-image');
+
+        // --- FUNCTIONS ---
+
+        function startGame() {
+            playerName = playerNameInput.value.trim();
+            playerClass = playerClassInput.value.trim();
+
+            if (playerName === "" || playerClass === "") {
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+
+            errorMsg.classList.add('hidden');
+            startScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            hasAnsweredCurrent = false;
+            nextBtn.classList.add('hidden');
+            
+            const currentQ = questions[currentQuestionIndex];
+            
+            // Update Trackers
+            questionTracker.textContent = `Q ${currentQuestionIndex + 1} / ${questions.length}`;
+            
+            // Calculate current score percentage
+            const currentScorePct = Math.round((correctAnswersCount / questions.length) * 100);
+            scoreTracker.textContent = `Score: ${currentScorePct}%`;
+
+            // Update Progress Bar
+            const progressPct = ((currentQuestionIndex) / questions.length) * 100;
+            progressBar.style.width = `${progressPct}%`;
+            
+            // Handle context text
+            if(currentQ.context) {
+                contextContainer.innerText = currentQ.context;
+                contextContainer.classList.remove('hidden');
+            } else {
+                contextContainer.classList.add('hidden');
+            }
+
+            // Handle Image
+            if(currentQ.image) {
+                questionImage.src = currentQ.image;
+                imageContainer.classList.remove('hidden');
+            } else {
+                imageContainer.classList.add('hidden');
+                questionImage.src = "";
+            }
+
+            // Set Question Text
+            questionText.textContent = `${currentQuestionIndex + 1}. ${currentQ.q}`;
+
+            // Generate Options
+            optionsContainer.innerHTML = '';
+            currentQ.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = "btn-option w-full text-left p-4 rounded-lg border-2 border-gray-200 bg-white hover:border-teal-400 focus:outline-none text-gray-700 font-medium text-lg";
+                btn.textContent = `${String.fromCharCode(65 + index)}. ${opt}`; // A, B, C, D
+                btn.onclick = () => selectOption(index, btn);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function selectOption(selectedIndex, btnElement) {
+            if (hasAnsweredCurrent) return; 
+            
+            hasAnsweredCurrent = true;
+            const currentQ = questions[currentQuestionIndex];
+            const allButtons = optionsContainer.querySelectorAll('button');
+
+            // Disable all buttons
+            allButtons.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.remove('hover:border-teal-400');
+            });
+
+            // Check Answer
+            if (selectedIndex === currentQ.answer) {
+                // Correct
+                correctAnswersCount++; 
+                btnElement.classList.remove('bg-white', 'border-gray-200', 'text-gray-700');
+                btnElement.classList.add('bg-emerald-100', 'border-emerald-500', 'text-emerald-800', 'font-bold');
+            } else {
+                // Incorrect
+                btnElement.classList.remove('bg-white', 'border-gray-200', 'text-gray-700');
+                btnElement.classList.add('bg-red-100', 'border-red-500', 'text-red-800', 'font-bold');
+                
+                // Highlight correct answer
+                const correctBtn = allButtons[currentQ.answer];
+                correctBtn.classList.remove('bg-white', 'border-gray-200', 'text-gray-700');
+                correctBtn.classList.add('bg-emerald-100', 'border-emerald-500', 'text-emerald-800', 'font-bold');
+            }
+
+            // Update real-time score tracker
+            const currentScorePct = Math.round((correctAnswersCount / questions.length) * 100);
+            scoreTracker.textContent = `Score: ${currentScorePct}%`;
+
+            // Show Next Button
+            nextBtn.classList.remove('hidden');
+            
+            // Change Next button text on last question
+            if (currentQuestionIndex === questions.length - 1) {
+                nextBtn.innerHTML = 'See Results <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+            }
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                loadQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            quizScreen.classList.add('hidden');
+            resultScreen.classList.remove('hidden');
+            
+            const finalScorePct = Math.round((correctAnswersCount / questions.length) * 100);
+
+            document.getElementById('display-name').textContent = playerName;
+            document.getElementById('display-class').textContent = playerClass;
+            document.getElementById('final-score').textContent = finalScorePct;
+            document.getElementById('correct-count').textContent = `Correct: ${correctAnswersCount} out of ${questions.length}`;
+        }
+
+        function downloadCertificate() {
+            const canvas = document.getElementById('certCanvas');
+            const ctx = canvas.getContext('2d');
+            const finalScorePct = Math.round((correctAnswersCount / questions.length) * 100);
+
+            // Background
+            ctx.fillStyle = '#f0fdfa'; // teal-50
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Outer Border
+            ctx.strokeStyle = '#0f766e'; // teal-700
+            ctx.lineWidth = 15;
+            ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+            
+            // Inner Border
+            ctx.strokeStyle = '#f59e0b'; // amber-500
+            ctx.lineWidth = 4;
+            ctx.strokeRect(40, 40, canvas.width - 80, canvas.height - 80);
+
+            // Decorative Corner Elements (Simple squares)
+            ctx.fillStyle = '#0f766e';
+            ctx.fillRect(40, 40, 20, 20);
+            ctx.fillRect(canvas.width - 60, 40, 20, 20);
+            ctx.fillRect(40, canvas.height - 60, 20, 20);
+            ctx.fillRect(canvas.width - 60, canvas.height - 60, 20, 20);
+
+            // Header Text
+            ctx.fillStyle = '#0f766e';
+            ctx.font = 'bold 45px "Georgia", serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('CERTIFICATE OF ACADEMIC EXCELLENCE', canvas.width / 2, 130);
+
+            ctx.font = '22px Arial';
+            ctx.fillStyle = '#4b5563';
+            ctx.fillText('This certificate is proudly awarded to:', canvas.width / 2, 200);
+
+            // Name
+            ctx.font = 'bold 50px Arial';
+            ctx.fillStyle = '#111827';
+            ctx.fillText(playerName.toUpperCase(), canvas.width / 2, 270);
+
+            // Class
+            ctx.font = 'italic 25px Arial';
+            ctx.fillStyle = '#374151';
+            ctx.fillText(`Class: ${playerClass}`, canvas.width / 2, 320);
+
+            // Description
+            ctx.font = '22px Arial';
+            ctx.fillStyle = '#4b5563';
+            ctx.fillText('For successfully completing 70 Questions of TKA-Style', canvas.width / 2, 380);
+            ctx.fillText('Descriptive Text (People & Places) Challenge.', canvas.width / 2, 415);
+
+            // Score
+            ctx.font = 'bold 65px Arial';
+            
+            // Color based on score
+            if (finalScorePct >= 80) ctx.fillStyle = '#10b981'; // green
+            else if (finalScorePct >= 60) ctx.fillStyle = '#f59e0b'; // amber
+            else ctx.fillStyle = '#ef4444'; // red
+
+            ctx.fillText(`Score: ${finalScorePct} / 100`, canvas.width / 2, 500);
+
+            // Date / Signature line
+            const today = new Date().toLocaleDateString();
+            ctx.font = '18px Arial';
+            ctx.fillStyle = '#6b7280';
+            ctx.textAlign = 'left';
+            ctx.fillText(`Date: ${today}`, 100, 570);
+            
+            ctx.textAlign = 'right';
+            ctx.fillText('English Teacher (SMK)', canvas.width - 100, 570);
+            
+            // Signature Line
+            ctx.beginPath();
+            ctx.moveTo(canvas.width - 300, 540);
+            ctx.lineTo(canvas.width - 100, 540);
+            ctx.strokeStyle = '#4b5563';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Trigger Download
+            const image = canvas.toDataURL("image/png");
+            const link = document.createElement('a');
+            link.download = `Certificate_${playerName.replace(/\s+/g, '_')}_DescriptiveText.png`;
+            link.href = image;
+            link.click();
+        }
+    </script>
+</body>
+</html>
